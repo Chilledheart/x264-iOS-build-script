@@ -1,11 +1,10 @@
 #!/bin/sh
+set -e
 
 CONFIGURE_FLAGS="--enable-static --enable-pic --disable-cli"
 
-# modified by yitang, 2017/09/05
-#ARCHS="arm64 armv7s x86_64 i386 armv7"
-ARCHS="arm64 x86_64 i386 armv7 armv7s"
-
+# modified by Chilledheart, 2021/03/03
+ARCHS="arm64 x86_64 armv7 armv7s"
 
 # directories
 SOURCE="x264"
@@ -66,26 +65,26 @@ then
 		cd "$SCRATCH/$ARCH"
 
 		if [ "$ARCH" = "i386" -o "$ARCH" = "x86_64" ]
-		then
-		    PLATFORM="iPhoneSimulator"
+		    then
+		    PLATFORM="iphonesimulator"
 		    CPU=
 		    if [ "$ARCH" = "x86_64" ]
 		    then
-		    	SIMULATOR="-mios-simulator-version-min=7.0"
-		    	HOST=
+		    	SIMULATOR="-mios-simulator-version-min=8.0"
+		    	HOST="--host=x86_64-apple-darwin --disable-asm"
 		    else
 		    	SIMULATOR="-mios-simulator-version-min=5.0"
-			HOST="--host=i386-apple-darwin"
+		    	HOST="--host=i386-apple-darwin --disable-asm"
 		    fi
 		else
-		    PLATFORM="iPhoneOS"
+		    PLATFORM="iphoneos"
 		    if [ $ARCH = "armv7s" ]
 		    then
 		    	CPU="--cpu=swift"
 		    else
 		    	CPU=
 		    fi
-		    SIMULATOR=
+		    SIMULATOR="-mios-version-min=8.0 -fembed-bitcode"
 		    if [ $ARCH = "arm64" ]
 		    then
 		        HOST="--host=aarch64-apple-darwin"
@@ -95,8 +94,8 @@ then
 		fi
 
 		XCRUN_SDK=`echo $PLATFORM | tr '[:upper:]' '[:lower:]'`
-		CC="xcrun -sdk $XCRUN_SDK clang -Wno-error=unused-command-line-argument-hard-error-in-future -arch $ARCH"
-		CFLAGS="-arch $ARCH $SIMULATOR"
+		CC="xcrun -sdk $XCRUN_SDK clang -Wno-error=unused-command-line-argument -arch $ARCH"
+    CFLAGS="-arch $ARCH $SIMULATOR -isysroot $(xcrun -sdk $XCRUN_SDK --show-sdk-path)"
 		CXXFLAGS="$CFLAGS"
 		LDFLAGS="$CFLAGS"
 
@@ -106,12 +105,13 @@ then
 		    $CPU \
 		    --extra-cflags="$CFLAGS" \
 		    --extra-ldflags="$LDFLAGS" \
+		    --extra-asflags="$LDFLAGS -fembed-bitcode-marker" \
 		    --prefix="$THIN/$ARCH"
 
-		mkdir extras
-		ln -s $GAS_PREPROCESSOR extras
+		mkdir -p extras
+		ln -sf $GAS_PREPROCESSOR extras
 
-		make -j3 install
+		make -j8 install
 		cd $CWD
 	done
 fi
