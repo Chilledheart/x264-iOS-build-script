@@ -1,10 +1,11 @@
 #!/bin/sh
 set -e
+set -x
 
 CONFIGURE_FLAGS="--enable-static --enable-pic --disable-cli"
 
 # modified by Chilledheart, 2021/03/03
-ARCHS="arm64 x86_64 armv7 armv7s"
+ARCHS="arm64 x86_64"
 
 # directories
 SOURCE="x264"
@@ -64,11 +65,15 @@ then
 		mkdir -p "$SCRATCH/$ARCH"
 		cd "$SCRATCH/$ARCH"
 
-		if [ "$ARCH" = "i386" -o "$ARCH" = "x86_64" ]
+		if [ "$ARCH" = "i386" -o "$ARCH" = "x86_64" -o "$ARCH" = "arm64" ]
 		    then
 		    PLATFORM="iphonesimulator"
 		    CPU=
-		    if [ "$ARCH" = "x86_64" ]
+		    if [ "$ARCH" = "arm64" ]
+		    then
+		    	SIMULATOR="-mios-simulator-version-min=8.0"
+		    	HOST="--host=aarch64-apple-darwin"
+		    elif [ "$ARCH" = "x86_64" ]
 		    then
 		    	SIMULATOR="-mios-simulator-version-min=8.0"
 		    	HOST="--host=x86_64-apple-darwin --disable-asm"
